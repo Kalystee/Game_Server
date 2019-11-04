@@ -11,8 +11,8 @@ module.exports = class Bullet extends ServerObject {
     }
 
     onUpdate(){
-        this.position.x += this.direction.x * this.speed;
-        this.position.y += this.direction.y * this.speed;
+        this.position.x += (this.direction.x * this.speed);
+        this.position.y += (this.direction.y * this.speed);
 
         return this.isDestroyed;
     }

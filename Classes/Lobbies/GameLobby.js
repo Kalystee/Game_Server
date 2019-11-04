@@ -5,7 +5,7 @@ let Bullet = require("../Bullet");
 
 module.exports = class GameLobby extends LobbyBase {
     constructor(id,settings = GameLobbySettings){
-        super();
+        super(id);
         this.settings = settings;
         this.bullets = [];
     }
@@ -26,7 +26,7 @@ module.exports = class GameLobby extends LobbyBase {
 
     }
 
-    onEnterLobby(){
+    onEnterLobby(connection = Connection){
         console.log("EnterGameLobby");
         let lobby = this;
         super.onEnterLobby(connection);
@@ -41,28 +41,30 @@ module.exports = class GameLobby extends LobbyBase {
         //Handle unspawning any server spawned object (loot, bullet etc)
     }
 
-    updateBullets(){
+    updateBullets() {
         let lobby = this;
         let bullets = lobby.bullets;
         let connections = lobby.connections;
 
-        bullets.forEach( bullet => {
+        bullets.forEach(bullet => {
             let isDestroyed = bullet.onUpdate();
-            if(isDestroyed){
+
+            if(isDestroyed) {
                 lobby.despawnBullet(bullet);
-            }else{
-               /* var returnData = {
+            } else {
+                var returnData = {
                     id: bullet.id,
                     position: {
                         x: bullet.position.x,
                         y: bullet.position.y
                     }
                 };
+
                 connections.forEach(connection => {
-                    connection.socket.emit("updatePosition", returnData);
-                })*/
+                    connection.socket.emit('updatePosition', returnData);
+                });
             }
-        })
+        });
     }
 
     updateDeadPlayers(){
@@ -91,37 +93,35 @@ module.exports = class GameLobby extends LobbyBase {
         })
     }
 
-    onFireBullet(connection = Connection,data){
-        socket.on("fireBullet",function (data) {
-            let bolly = this;
+    onFireBullet(connection = Connection, data) {
+        let lobby = this;
 
-            let bullet = new Bullet();
-            bullet.name = "Bullet";
-            bullet.activator = data.activator;
-            bullet.position.x = data.position.x;
-            bullet.position.y = data.position.y;
-            bullet.direction.x = data.direction.x;
-            bullet.direction.y = data.direction.y;
+        let bullet = new Bullet();
+        bullet.name = 'Bullet';
+        bullet.activator = data.activator;
+        bullet.position.x = data.position.x;
+        bullet.position.y = data.position.y;
+        bullet.direction.x = data.direction.x;
+        bullet.direction.y = data.direction.y;
 
-            lobby.bullets.push(bullet);
-            var returnData = {
-                name: bullet.name,
-                id: bullet.id,
-                activator:bullet.activator,
-                position:{
-                    x: bullet.position.x,
-                    y: bullet.position.y
-                },
-                direction:{
-                    x: bullet.direction.x,
-                    y: bullet.direction.y
-                },
-                speed: bullet.speed
-            };
+        lobby.bullets.push(bullet);
 
-            connection.socket.emit('serverSpawn',returnData);
-            connection.socket.broadcast.to(lobby.id).emit('serverSpawn',returnData);
-        });
+        var returnData = {
+            name: bullet.name,
+            id: bullet.id,
+            activator: bullet.activator,
+            position: {
+                x: bullet.position.x,
+                y: bullet.position.y
+            },
+            direction: {
+                x: bullet.direction.x,
+                y: bullet.direction.y
+            }
+        };
+
+        connection.socket.emit('serverSpawn', returnData);
+        connection.socket.broadcast.to(lobby.id).emit('serverSpawn', returnData); //Only broadcast to those in the same lobby as us
     }
 
     onCollisionDestroy(connection = Connection,data){
@@ -155,7 +155,7 @@ module.exports = class GameLobby extends LobbyBase {
                 }
 
             });
-            if(!playerHit){
+            if(!playerHit ){
                 bullet.isDestroyed = true;
             }
 
