@@ -55,8 +55,8 @@ module.exports = class GameLobby extends LobbyBase {
                 var returnData = {
                     id: bullet.id,
                     position: {
-                        x: bullet.position.x,
-                        y: bullet.position.y
+                        x: bullet.position.x.toString(),
+                        y: bullet.position.y.toString()
                     }
                 };
 
@@ -99,10 +99,10 @@ module.exports = class GameLobby extends LobbyBase {
         let bullet = new Bullet();
         bullet.name = 'Bullet';
         bullet.activator = data.activator;
-        bullet.position.x = data.position.x;
-        bullet.position.y = data.position.y;
-        bullet.direction.x = data.direction.x;
-        bullet.direction.y = data.direction.y;
+        bullet.position.x = parseFloat(data.position.x);
+        bullet.position.y = parseFloat(data.position.y);
+        bullet.direction.x = parseFloat(data.direction.x);
+        bullet.direction.y = parseFloat(data.direction.y);
 
         lobby.bullets.push(bullet);
 
@@ -111,13 +111,14 @@ module.exports = class GameLobby extends LobbyBase {
             id: bullet.id,
             activator: bullet.activator,
             position: {
-                x: bullet.position.x,
-                y: bullet.position.y
+                x: bullet.position.x.toString(),
+                y: bullet.position.y.toString()
             },
             direction: {
-                x: bullet.direction.x,
-                y: bullet.direction.y
-            }
+                x: bullet.direction.x.toString(),
+                y: bullet.direction.y.toString()
+            },
+            speed: bullet.speed.toString()
         };
 
         connection.socket.emit('serverSpawn', returnData);
