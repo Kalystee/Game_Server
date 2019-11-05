@@ -12,7 +12,7 @@ module.exports = class Connection {
         let server = connection.server;
         let player = connection.player;
 
-        socket.on("disconnected",function () {
+        socket.on("disconnect",function () {
             server.onDisconnected(connection);
         });
 
