@@ -38,7 +38,6 @@ module.exports = class Connection {
         socket.on("updateRotation",function (data) {
             player.tankRotation = data.tankRotation;
             player.barrelRotation = data.barrelRotation;
-
             socket.broadcast.to(connection.lobby.id).emit('updateRotation',player)
         });
     }
