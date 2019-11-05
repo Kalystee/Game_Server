@@ -20,7 +20,7 @@ module.exports = class GameLobby extends LobbyBase {
     canEnterLobby(connection = Connection){
         let lobby = this;
         let maxPlayerCount = lobby.settings.maxPlayers;
-        let currentPlayerCount = lobby.connection.length;
+        let currentPlayerCount = lobby.connections.length;
 
         return currentPlayerCount + 1 <= maxPlayerCount;
 
