@@ -36,7 +36,7 @@ module.exports = class GameLobby extends LobbyBase {
 
     onLeaveLobby(connection = Connection){
         let lobby = this;
-        super.onEnterLobby(connection);
+        super.onLeaveLobby(connection);
         lobby.removePlayer(connection);
         //Handle unspawning any server spawned object (loot, bullet etc)
     }
@@ -136,13 +136,13 @@ module.exports = class GameLobby extends LobbyBase {
 
             lobby.connections.forEach(c =>{
                 let player = c.player;
-                if(bullet.activator !== playerId) {
+                if(bullet.activator !== player.id) {
                     let distance = bullet.position.Distance(player.position);
 
-                    if (distance < 0.65) {
+                    if (distance < 1.05) {
                         let isDead = player.dealDamage(50); //test deal damage
                         if (isDead) {
-                            console.log("Player with id : " + playerId + " has died");
+                            console.log("Player with id : " + player.id + " has died");
                             let returnData = {
                                 id: player.id
                             };

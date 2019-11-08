@@ -33,7 +33,7 @@ module.exports = class Player {
                 this.respawnTicker = new Number(0);
                 this.respawnTime = new Number(0);
                 this.health = new Number(100);
-                this.position = new Vector2(-8,3); //Respawn point
+                this.position = new Vector2(0,0); //Respawn point
 
                 return true;
             }
