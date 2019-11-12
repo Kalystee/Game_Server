@@ -54,7 +54,13 @@ module.exports = class Server {
             id:id
         });
 
+        let currentLobbyIndex  = connection.player.lobby;
         server.lobbys[connection.player.lobby].onLeaveLobby(connection);
+
+        if(currentLobbyIndex !== 0 && server.lobbys[currentLobbyIndex].connections.length === 0){
+            console.log("Closing down lobby ("+ currentLobbyIndex +")");
+            server.lobbys.splice(currentLobbyIndex,1);
+        }
 
     }
 

@@ -2,17 +2,23 @@ let LobbyBase = require("./LobbyBase");
 let GameLobbySettings = require("./GameLobbySetting");
 let Connection = require("../Connection");
 let Bullet = require("../Bullet");
+let LobbyState = require("../Utils/LobbyState");
+let Vector2 = require('../Vector2');
+let ServerItem = require("../Utils/ServerItem");
+let AIBase = require('../AI/AIBase');
 
 module.exports = class GameLobby extends LobbyBase {
     constructor(id,settings = GameLobbySettings){
         super(id);
         this.settings = settings;
+        this.lobbyState = new LobbyState();
         this.bullets = [];
     }
 
     onUpdate(){
         let lobby = this;
 
+        super.onUpdate();
         lobby.updateBullets();
         lobby.updateDeadPlayers();
     }
@@ -27,10 +33,23 @@ module.exports = class GameLobby extends LobbyBase {
     }
 
     onEnterLobby(connection = Connection){
-        console.log("EnterGameLobby");
         let lobby = this;
+        let socket = connection.socket;
         super.onEnterLobby(connection);
-        lobby.addPlayer(connection);
+       // lobby.addPlayer(connection);
+        if(lobby.connections.length === lobby.settings.maxPlayers){
+            console.log("We have enough player we can start the game");
+            lobby.lobbyState.currentState = lobby.lobbyState.GAME;
+            lobby.onSpawnAllPlayersIntoGame();
+            lobby.onSpawnAIIntoGame();
+        }
+
+        let returnData = {
+            state: lobby.lobbyState.currentState,
+        };
+        socket.emit("loadGame");
+        socket.emit("lobbyUpdate",returnData);
+        socket.broadcast.to(lobby.id).emit("lobbyUpdate",returnData);
         //Handle spawning any server spawned object (loot, bullet etc)
     }
 
@@ -39,6 +58,33 @@ module.exports = class GameLobby extends LobbyBase {
         super.onLeaveLobby(connection);
         lobby.removePlayer(connection);
         //Handle unspawning any server spawned object (loot, bullet etc)
+        lobby.onUnspawnAllAIInGame(connection);
+    }
+
+    onSpawnAllPlayersIntoGame(){
+        let lobby = this;
+        let connections = lobby.connections;
+        connections.forEach(connection => {
+           lobby.addPlayer(connection);
+        });
+    }
+
+    onSpawnAIIntoGame(){
+        let lobby = this;
+        console.log("Spawn AI into game");
+        lobby.onServerSpawn(new AIBase(),new Vector2(3,2));
+    }
+
+    onUnspawnAllAIInGame(connection = Connection){
+        let lobby = this;
+        let serverItems = lobby.serverItems;
+
+        //remove all server items from the client but still leave them in the server others
+        serverItems.forEach(serverItem => {
+            connection.socket.emit("serverUnspawn", {
+                id : serverItem.id
+            });
+        });
     }
 
     updateBullets() {
@@ -83,6 +129,28 @@ module.exports = class GameLobby extends LobbyBase {
                         position: {
                             x: player.position.x,
                             y: player.position.y
+                        }
+                    };
+
+                    socket.emit('playerRespawn',returnData);
+                    socket.broadcast.to(lobby.id).emit('playerRespawn',returnData);
+                }
+            }
+        });
+
+        let aiList = lobby.serverItems.filter(item =>{
+            return item instanceof AIBase;
+        });
+        aiList.forEach(ai => {
+            if(ai.isDead){
+                let isRespawn = ai.respawnCounter();
+                if(isRespawn){
+                    let socket = connections[0].socket;
+                    let returnData = {
+                        id: ai.id,
+                        position: {
+                            x: ai.position.x,
+                            y: ai.position.y
                         }
                     };
 
@@ -151,11 +219,37 @@ module.exports = class GameLobby extends LobbyBase {
                         } else {
                             console.log("Player with id: " + player.id + " has (" + player.health + ") health left");
                         }
+                        playerHit = true;
                         lobby.despawnBullet(bullet);
                     }
                 }
 
             });
+
+            if(!playerHit){
+                let aiList = lobby.serverItems.filter(item => {
+                    return item instanceof AIBase;
+                });
+                aiList.forEach(ai => {
+                   if(bullet.activator !== ai.id){
+                       let distance = bullet.position.Distance(ai.position);
+
+                       if(distance < 1.05){
+                           let isDead = ai.dealDamage(50);
+                           if(isDead){
+                               console.log("AI is dead");
+                               let returnData = {
+                                   id: ai.id,
+                               };
+                               lobby.connections[0].socket.emit("playerDied",returnData);
+                               lobby.connections[0].socket.broadcast.to(lobby.id).emit("playerDied",returnData);
+                           }else{
+                               console.log("AI have "+ai.health+" HP left");
+                           }
+                       }
+                   }
+                });
+            }
             if(!playerHit ){
                 bullet.isDestroyed = true;
             }
@@ -193,7 +287,7 @@ module.exports = class GameLobby extends LobbyBase {
         };
 
         socket.emit("spawn",returnData);
-        socket.broadcast.to(lobby.id).emit("spawn",returnData);
+        //socket.broadcast.to(lobby.id).emit("spawn",returnData);
 
         //Tell myself about everyone else already in the lobby
         connections.forEach(c => {
